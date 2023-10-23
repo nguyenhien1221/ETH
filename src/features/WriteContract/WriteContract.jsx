@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { handleConnectToWeb3 } from "../../utils/helper";
+import { handleConnectToWeb3, ownerAddress } from "../../utils/helper";
 import { BrowserProvider, Contract, Wallet } from "ethers";
 import { PRIVATE_KEY, TOKEN_CONTRACT } from "../constants";
 

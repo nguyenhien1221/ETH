@@ -1,5 +1,5 @@
 import "../ReadContract/ReadContract.css";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Space, Collapse, Form, Input } from "antd";
 import {
   FileTextOutlined,
@@ -22,12 +22,11 @@ const ReadContract = () => {
     "function totalSupply() public view returns (uint256)",
     "function allowance(address a, address a) view returns (uint)",
   ];
-  // const provider = new BrowserProvider(window.ethereum);
-  // const contract = new Contract(TOKEN_CONTRACT, abi, provider);
+  const provider = new BrowserProvider(window.ethereum);
+  const contract = new Contract(TOKEN_CONTRACT, abi, provider);
 
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [accountAddress, setAccountAddress] = useState("");
   const [contractData, setContractData] = useState({
     allowance: "",
     balanceOf: "",
@@ -37,50 +36,38 @@ const ReadContract = () => {
     totalSupply: "",
   });
 
-  // useEffect(() => {
-  //   const getContractData = async () => {
-  //     const decimals = await contract.decimals();
-  //     const name = await contract.name();
-  //     const symbol = await contract.symbol();
-  //     const totalSupply = await contract.totalSupply();
-  //     setContractData({
-  //       ...contractData,
-  //       decimals: String(decimals),
-  //       name,
-  //       symbol,
-  //       totalSupply: String(totalSupply),
-  //     });
-  //   };
+  useEffect(() => {
+    const getContractData = async () => {
+      const decimals = await contract.decimals();
+      const name = await contract.name();
+      const symbol = await contract.symbol();
+      const totalSupply = await contract.totalSupply();
+      setContractData({
+        ...contractData,
+        decimals: String(decimals),
+        name,
+        symbol,
+        totalSupply: String(totalSupply),
+      });
+    };
 
-  //   getContractData();
-  // }, []);
+    getContractData();
+  }, []);
 
-  // useEffect(() => {
-  //   const getAccount = async () => {
-  //     const account =
-  //       window.ethereum &&
-  //       (await window.ethereum.request({
-  //         method: "eth_requestAccounts",
-  //       }));
-  //     setAccountAddress(account[0]);
-  //   };
-  //   getAccount();
-  // }, []);
+  const handleGetbalance = async address => {
+    const balnance = await provider.getBalance(address.accountAddress);
+    setContractData({ ...contractData, balanceOf: String(balnance) });
+  };
 
-  // const handleGetbalance = async address => {
-  //   const balnance = await provider.getBalance(address.accountAddress);
-  //   setContractData({ ...contractData, balanceOf: String(balnance) });
-  // };
-
-  // const handleGetAllowance = async address => {
-  //   const { ownerAddress, spenderAddress } = address;
-  //   try {
-  //     const allowance = await contract.allowance(ownerAddress, spenderAddress);
-  //     setContractData({ ...contractData, allowance: String(allowance) });
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
+  const handleGetAllowance = async address => {
+    const { ownerAddress, spenderAddress } = address;
+    try {
+      const allowance = await contract.allowance(ownerAddress, spenderAddress);
+      setContractData({ ...contractData, allowance: String(allowance) });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const genExtra = () => (
     <Space>
@@ -104,7 +91,7 @@ const ReadContract = () => {
         <div>
           <FormBox
             submitText="Query"
-            // onSubmit={address => handleGetAllowance(address)}
+            onSubmit={address => handleGetAllowance(address)}
           >
             <Form.Item
               label="owner (address)"
@@ -145,7 +132,7 @@ const ReadContract = () => {
         <div>
           <FormBox
             submitText="Query"
-            // onSubmit={address => handleGetbalance(address)}
+            onSubmit={address => handleGetbalance(address)}
           >
             <Form.Item
               label="account (address)"
@@ -239,11 +226,8 @@ const ReadContract = () => {
         <Button
           icon={<div className={isConnected ? "green" : undefined}></div>}
         >
-          <a
-            href={`https://sepolia.etherscan.io/address/${accountAddress}`}
-            target="blank"
-          >
-            Connected Web3 [{accountAddress}]
+          <a href={`https://sepolia.etherscan.io/address/`} target="blank">
+            Connected Web3
           </a>
         </Button>
       ) : (

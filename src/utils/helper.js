@@ -13,11 +13,3 @@ export const handleConnectToWeb3 = async () => {
     getDefaultProvider();
   }
 };
-
-export const ownerAddress =
-  window.ethereum &&
-  (
-    await window.ethereum.request({
-      method: "eth_requestAccounts",
-    })
-  )[0];
