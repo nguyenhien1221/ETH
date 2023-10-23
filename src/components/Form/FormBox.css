@@ -1,0 +1,7 @@
+.ant-form-item-required::before {
+  display: none !important;
+}
+
+.hide_btn {
+  display: none;
+}

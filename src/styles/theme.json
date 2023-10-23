@@ -1,0 +1,53 @@
+{
+  "token": {
+    "color": "white"
+   
+  },
+    "components": {
+      "Button": {
+        "colorPrimary": "rgb(7, 132, 195)",
+        "defaultBg":"transparent", 
+        "defaultColor": "rgba(255, 255, 255, 0.88)",
+        "colorBgContainerDisabled": "rgba(117, 198, 255, 0.25)",
+        "colorTextDisabled": "rgba(0, 0, 0, 0.5)"
+      },
+      "Input": {
+        "hoverBg": "#162138",
+        "colorBgContainer":"#162138",
+        "colorText":"white",
+        "colorTextPlaceholder":"#dee2e6"
+      },
+      "Tabs": {
+        "cardBg": "rgb(102, 118, 139)",
+        "itemActiveColor": "rgb(225, 225, 225)",
+        "itemColor": "rgb(203, 213, 225)",
+        "itemSelectedColor": "rgb(203, 213, 225)",
+        "colorBgContainer": "rgb(7, 132, 195)",
+        "colorBorder": "transparent",
+        "colorBorderSecondary":"transparent",
+        "cardGutter":"8",
+        "cardPadding":"6px"
+      },
+      "Collapse": {
+        "contentBg": "rgb(22, 33, 56)",
+        "headerBg": "#273343",
+        "colorBorder": "rgb(58, 71, 89)",
+        "colorText": "rgba(255, 255, 255, 0.88)",
+        "colorTextHeading": "rgba(255, 255, 255, 0.88)"
+      },
+      "Form": {
+        "labelColor": "rgba(255, 255, 255, 0.88)"
+      },
+      "Modal": {
+        "contentBg": "#111a2e",
+        "headerBg": "#111a2e",
+        "titleColor": "rgba(255, 255, 255, 0.88)",
+        "colorText": "rgba(255, 255, 255, 0.88)"
+      },
+      "Card": {
+        "colorBgContainer": "rgb(39, 51, 67)",
+        "colorText": "rgba(255, 255, 255, 0.88)"
+      
+      }
+    }
+  }

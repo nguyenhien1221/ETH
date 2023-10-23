@@ -1,0 +1,19 @@
+.ant-card-body {
+  padding: 10px !important;
+}
+
+.wallet_item,
+.wallet_item span {
+  display: flex;
+  align-items: center;
+}
+
+.wallet_item {
+  min-height: 51px;
+  justify-content: space-between;
+  margin-top: 10px;
+  border: 1px solid #273343;
+  background-color: #162138;
+  width: 100%;
+  padding: 10px;
+}

@@ -1,0 +1,30 @@
+.container {
+  padding: 10px;
+}
+
+.ant-btn-default {
+  display: block;
+  border: 2px solid #162138;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.ant-btn-icon div {
+  display: inline-block;
+  background-color: red;
+  border-radius: 50%;
+  height: 11px;
+  width: 11px;
+}
+.green {
+  background-color: green !important;
+}
+.action {
+  margin-top: 20px;
+}
+
+.variable-type {
+  color: #93a3b8;
+  font-size: 12px;
+  font-style: italic;
+}
