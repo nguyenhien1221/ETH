@@ -1,5 +1,5 @@
 import "../ReadContract/ReadContract.css";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button, Space, Collapse, Form, Input } from "antd";
 import {
   FileTextOutlined,
@@ -9,64 +9,69 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { handleConnectToWeb3 } from "../../utils/helper";
-import { BrowserProvider, Contract } from "ethers";
 import { TOKEN_CONTRACT } from "../constants";
+import abi from "../../abi/abi.json";
+import {
+  useAccount,
+  useConnect,
+  useSwitchNetwork,
+  useContractReads,
+  useContractRead,
+} from "wagmi";
+import { walletClient } from "../../utils/config";
 
 const ReadContract = () => {
-  const abi = [
-    "function decimals() view returns (uint8)",
-    "function symbol() view returns (string)",
-    "function name() view returns (string)",
-    "function balanceOf(address a) view returns (uint)",
-    "function totalSupply() public view returns (uint256)",
-    "function allowance(address a, address a) view returns (uint)",
-  ];
-  const provider = new BrowserProvider(window.ethereum);
-  const contract = new Contract(TOKEN_CONTRACT, abi, provider);
+  const { address } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { chains } = useSwitchNetwork();
+  const ITS_CONTRACT = {
+    address: TOKEN_CONTRACT,
+    abi: abi,
+  };
 
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [contractData, setContractData] = useState({
-    allowance: "",
-    balanceOf: "",
-    decimals: "",
-    name: "",
-    symbol: "",
-    totalSupply: "",
+    addressOwner: "",
+    addressSpender: "",
   });
 
-  useEffect(() => {
-    const getContractData = async () => {
-      const decimals = await contract.decimals();
-      const name = await contract.name();
-      const symbol = await contract.symbol();
-      const totalSupply = await contract.totalSupply();
-      setContractData({
-        ...contractData,
-        decimals: String(decimals),
-        name,
-        symbol,
-        totalSupply: String(totalSupply),
-      });
-    };
+  const { data } = useContractReads({
+    contracts: [
+      {
+        ...ITS_CONTRACT,
+        functionName: "decimals",
+      },
+      { ...ITS_CONTRACT, functionName: "name" },
+      { ...ITS_CONTRACT, functionName: "symbol" },
+      { ...ITS_CONTRACT, functionName: "totalSupply" },
+    ],
+  });
+  const [decimals, name, symbol, totalSupply] = data;
 
-    getContractData();
-  }, []);
+  const balanceData = useContractRead({
+    ...ITS_CONTRACT,
+    functionName: "balanceOf",
+    enabled: false,
+    args: [contractData.addressOwner],
+  });
+
+  const allowanceData = useContractRead({
+    ...ITS_CONTRACT,
+    functionName: "allowance",
+    enabled: false,
+    args: [contractData.addressOwner, contractData.addressSpender],
+  });
 
   const handleGetbalance = async address => {
-    const balnance = await provider.getBalance(address.accountAddress);
-    setContractData({ ...contractData, balanceOf: String(balnance) });
+    setContractData({ addressOwner: address.accountAddress });
   };
 
   const handleGetAllowance = async address => {
-    const { ownerAddress, spenderAddress } = address;
-    try {
-      const allowance = await contract.allowance(ownerAddress, spenderAddress);
-      setContractData({ ...contractData, allowance: String(allowance) });
-    } catch (err) {
-      console.error(err);
-    }
+    setContractData({
+      addressOwner: address.ownerAddress,
+      addressSpender: address.spenderAddress,
+    });
   };
 
   const genExtra = () => (
@@ -119,7 +124,7 @@ const ReadContract = () => {
           </FormBox>
           <Space>
             <span className="variable-type">uint256</span>
-            <p>{contractData.allowance}</p>
+            <p>{allowanceData.data && String(allowanceData.data)}</p>
           </Space>
         </div>
       ),
@@ -148,7 +153,7 @@ const ReadContract = () => {
           </FormBox>
           <Space>
             <span className="variable-type">uint256</span>
-            <p>{contractData.balanceOf}</p>
+            <p>{balanceData.data && String(balanceData.data)}</p>
           </Space>
         </div>
       ),
@@ -159,7 +164,7 @@ const ReadContract = () => {
       label: "3. decimals",
       children: (
         <Space size={2}>
-          <p>{contractData.decimals}</p>
+          <p>{decimals.result}</p>
           <span className="variable-type">uint8</span>
         </Space>
       ),
@@ -170,7 +175,7 @@ const ReadContract = () => {
       label: "4. name",
       children: (
         <Space size={2}>
-          <span>{contractData.name}</span>{" "}
+          <span>{name.result}</span>
           <span className="variable-type">string</span>
         </Space>
       ),
@@ -181,7 +186,7 @@ const ReadContract = () => {
       label: "5. symbol",
       children: (
         <Space size={2}>
-          <span>{contractData.symbol}</span>
+          <span>{symbol.result}</span>
           <span className="variable-type">string</span>
         </Space>
       ),
@@ -196,7 +201,7 @@ const ReadContract = () => {
             href="https://sepolia.etherscan.io/unitconverter?wei=11205479000000010000123667"
             target="blank"
           >
-            {contractData.totalSupply}
+            {String(totalSupply.result)}
           </a>
           <span className="variable-type">unit256</span>
         </Space>
@@ -206,18 +211,18 @@ const ReadContract = () => {
   ];
 
   const handleConnect = async item => {
+    const [connector] = connectors;
+    const [Sepolia] = chains;
+
     if (item !== 1) {
       setIsOpenModal(false);
       return;
     }
-    handleConnectToWeb3()
-      .then(() => {
-        setIsOpenModal(false);
-        setIsConnected(true);
-      })
-      .catch(() => {
-        console.log("fail to connect...");
-      });
+
+    await walletClient.switchChain({ id: Sepolia.id });
+    connect({ connector });
+    setIsOpenModal(false);
+    setIsConnected(true);
   };
 
   return (
@@ -226,8 +231,11 @@ const ReadContract = () => {
         <Button
           icon={<div className={isConnected ? "green" : undefined}></div>}
         >
-          <a href={`https://sepolia.etherscan.io/address/`} target="blank">
-            Connected Web3
+          <a
+            href={`https://sepolia.etherscan.io/address/${address}`}
+            target="blank"
+          >
+            Connected Web3 [{address}]
           </a>
         </Button>
       ) : (

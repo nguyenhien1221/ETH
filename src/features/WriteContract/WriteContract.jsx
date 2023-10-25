@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "../WriteContract/WriteContract.css";
 import { Button, Space, Collapse, Form, Input, Spin } from "antd";
 import {
@@ -8,25 +8,58 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { handleConnectToWeb3, ownerAddress } from "../../utils/helper";
-import { BrowserProvider, Contract, Wallet } from "ethers";
-import { PRIVATE_KEY, TOKEN_CONTRACT } from "../constants";
+import { TOKEN_CONTRACT } from "../constants";
+import abi from "../../abi/abi.json";
+import {
+  useAccount,
+  useConnect,
+  useContractWrite,
+  useSwitchNetwork,
+} from "wagmi";
+import { walletClient } from "../../utils/config";
 
 const WriteContract = () => {
-  const abi = [
-    "function approve(address _spender, uint256 _value) public returns (bool success)",
-    "function mint(address _spender, uint256 _value) public returns (bool success)",
-    "function transfer(address _recipient, uint256 _value) public returns (bool success)",
-    "function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)",
-    "function allowance(address a, address a) view returns (uint)",
-  ];
-  // const provider = new BrowserProvider(window.ethereum);
-  // const signer = new Wallet(PRIVATE_KEY, provider);
-  // const contract = new Contract(TOKEN_CONTRACT, abi, signer);
+  const { address } = useAccount();
+  const { chains } = useSwitchNetwork();
+  const { connect, connectors } = useConnect();
+  const writeContractConfig = {
+    address: TOKEN_CONTRACT,
+    abi: abi,
+    gas: 1000000,
+  };
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOpenModal, setIsOpenModal] = useState(false);
+  const approveContract = useContractWrite({
+    ...writeContractConfig,
+    functionName: "approve",
+  });
+
+  const decreaseAllowance = useContractWrite({
+    ...writeContractConfig,
+    functionName: "decreaseAllowance",
+  });
+
+  const increaseAllowance = useContractWrite({
+    ...writeContractConfig,
+    functionName: "increaseAllowance",
+  });
+
+  const mint = useContractWrite({
+    ...writeContractConfig,
+    functionName: "mint",
+  });
+
+  const transfer = useContractWrite({
+    ...writeContractConfig,
+    functionName: "transfer",
+  });
+
+  const transferFrom = useContractWrite({
+    ...writeContractConfig,
+    functionName: "transferFrom",
+  });
+
   const [isConnected, setIsConnected] = useState(false);
+  const [isOpenModal, setIsOpenModal] = useState(false);
   const [contractHash, setContractHash] = useState({
     approveHash: "",
     decreaseAllowanceHash: "",
@@ -35,141 +68,51 @@ const WriteContract = () => {
     transferHash: "",
     transferFromHash: "",
   });
-  const [accountAddress, setAccountAddress] = useState("");
 
-  useEffect(() => {
-    const getAccount = async () => {
-      const account =
-        window.ethereum &&
-        (await window.ethereum.request({
-          method: "eth_requestAccounts",
-        }));
-      setAccountAddress(account[0]);
-    };
-    getAccount();
-  }, []);
+  const handleApprove = async data => {
+    const { ownerAddress, amount } = data;
+    approveContract
+      .writeAsync({ args: [ownerAddress, amount] })
+      .then(data => setContractHash({ approveHash: data.hash }));
+  };
 
-  // const handleApprove = async data => {
-  //   const { ownerAddress, amount } = data;
-  //   setIsLoading(true);
-  //   try {
-  //     const approve = await contract.approve(ownerAddress, amount);
-  //     await approve.wait();
-  //     setContractHash({ approveHash: approve.hash });
-  //   } catch (err) {
-  //     console.log(err);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const handleDecreaseAllowance = async data => {
+    const { spenderAddress, subtractedValue } = data;
+    decreaseAllowance
+      .writeAsync({ args: [spenderAddress, subtractedValue] })
+      .then(data => setContractHash({ decreaseAllowanceHash: data.hash }));
+  };
 
-  // const handleDecreaseAllowance = async data => {
-  //   const { spenderAddress, subtractedValue } = data;
-  //   setIsLoading(true);
-  //   contract
-  //     .allowance(ownerAddress, spenderAddress)
-  //     .then(currentAllowance => {
-  //       console.log(
-  //         `Current Allowance for ${spenderAddress}: ${currentAllowance.toString()}`
-  //       );
+  const handleIncreaseAllowance = async data => {
+    const { spenderAddress, addedValue } = data;
+    increaseAllowance
+      .writeAsync({ args: [spenderAddress, addedValue] })
+      .then(data => setContractHash({ increaseAllowanceHash: data.hash }));
+  };
 
-  //       const newAllowance = currentAllowance - subtractedValue;
-  //       contract
-  //         .approve(spenderAddress, newAllowance)
-  //         .then(tx => {
-  //           console.log("Allowance decreased");
-  //           setContractHash({ decreaseAllowanceHash: tx.hash });
-  //         })
-  //         .catch(approveError => {
-  //           console.error("Allowance decrease failed:", approveError);
-  //         });
-  //     })
-  //     .catch(allowanceError => {
-  //       console.error("Error getting current allowance:", allowanceError);
-  //     })
-  //     .finally(() => setIsLoading(false));
-  // };
+  const handleMint = async data => {
+    const { accountAddress, amount } = data;
+    mint
+      .writeAsync({ args: [accountAddress, amount] })
+      .then(data => setContractHash({ mintHash: data.hash }));
+  };
 
-  // const handleIncreaseAllowance = async data => {
-  //   const { spenderAddress, addedValue } = data;
-  //   setIsLoading(true);
-  //   contract
-  //     .allowance(ownerAddress, spenderAddress)
-  //     .then(currentAllowance => {
-  //       console.log(
-  //         `Current Allowance for ${spenderAddress}: ${currentAllowance.toString()}`
-  //       );
+  const handleTransfer = async data => {
+    const { recipientAddress, amount } = data;
+    transfer
+      .writeAsync({ args: [recipientAddress, amount] })
+      .then(data => setContractHash({ transferHash: data.hash }));
+  };
 
-  //       const newAllowance = currentAllowance + addedValue;
-
-  //       contract
-  //         .approve(spenderAddress, newAllowance)
-  //         .then(tx => {
-  //           console.log("Allowance increased");
-  //           setContractHash({ increaseAllowanceHash: tx.hash });
-  //         })
-  //         .catch(approveError => {
-  //           console.error("Allowance increase failed:", approveError);
-  //         });
-  //     })
-  //     .catch(allowanceError => {
-  //       console.error("Error getting current allowance:", allowanceError);
-  //     })
-  //     .finally(() => setIsLoading(false));
-  // };
-
-  // const handleMint = async data => {
-  //   const { accountAddress, amount } = data;
-  //   setIsLoading(true);
-  //   try {
-  //     const mint = await contract.mint(accountAddress, amount);
-  //     await mint.wait();
-  //     setContractHash({ mintHash: mint.hash });
-  //   } catch (err) {
-  //     console.log(err);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // const handleTransfer = async data => {
-  //   const { recipientAddress, amount } = data;
-  //   setIsLoading(true);
-  //   try {
-  //     const transfer = await contract.transfer(recipientAddress, amount, {
-  //       gasLimit: 100000,
-  //     });
-  //     await transfer.wait();
-  //     setContractHash({ transferHash: transfer.hash });
-  //     transfer.wait();
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("fail to transfer");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // const handleTransferFrom = async data => {
-  //   const { senderAddress, recipientAddress, amount } = data;
-  //   setIsLoading(true);
-  //   try {
-  //     const transferFrom = await contract.transferFrom(
-  //       senderAddress,
-  //       recipientAddress,
-  //       amount,
-  //       {
-  //         gasLimit: 1000000,
-  //       }
-  //     );
-  //     await transferFrom.wait();
-  //     setContractHash({ transferFromHash: transferFrom.hash });
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const handleTransferFrom = async data => {
+    const { senderAddress, recipientAddress, amount } = data;
+    transferFrom
+      .writeAsync({
+        args: [senderAddress, recipientAddress, amount],
+      })
+      .then(data => setContractHash({ transferFromHash: data.hash }))
+      .catch(error => alert(error));
+  };
 
   const genExtra = () => (
     <Space>
@@ -195,7 +138,7 @@ const WriteContract = () => {
             contractHash={contractHash.approveHash}
             submitText="Write"
             isDisableSubmitBtn={isConnected}
-            // onSubmit={data => handleApprove(data)}
+            onSubmit={data => handleApprove(data)}
           >
             <Form.Item
               label="owner (address)"
@@ -234,7 +177,7 @@ const WriteContract = () => {
             contractHash={contractHash.decreaseAllowanceHash}
             submitText="Write"
             isDisableSubmitBtn={isConnected}
-            // onSubmit={data => handleDecreaseAllowance(data)}
+            onSubmit={data => handleDecreaseAllowance(data)}
           >
             <Form.Item
               label="spender (address)"
@@ -271,7 +214,7 @@ const WriteContract = () => {
           contractHash={contractHash.increaseAllowanceHash}
           submitText="Write"
           isDisableSubmitBtn={isConnected}
-          // onSubmit={data => handleIncreaseAllowance(data)}
+          onSubmit={data => handleIncreaseAllowance(data)}
         >
           <Form.Item
             label="spender (address)"
@@ -306,7 +249,7 @@ const WriteContract = () => {
         <FormBox
           submitText="Write"
           isDisableSubmitBtn={isConnected}
-          // onSubmit={data => handleMint(data)}
+          onSubmit={data => handleMint(data)}
           contractHash={contractHash.mintHash}
         >
           <Form.Item
@@ -342,7 +285,7 @@ const WriteContract = () => {
         <FormBox
           submitText="Write"
           isDisableSubmitBtn={isConnected}
-          // onSubmit={data => handleTransfer(data)}
+          onSubmit={data => handleTransfer(data)}
           contractHash={contractHash.transferHash}
         >
           <Form.Item
@@ -378,7 +321,7 @@ const WriteContract = () => {
         <FormBox
           submitText="Write"
           isDisableSubmitBtn={isConnected}
-          // onSubmit={data => handleTransferFrom(data)}
+          onSubmit={data => handleTransferFrom(data)}
           contractHash={contractHash.transferFromHash}
         >
           <Form.Item
@@ -421,18 +364,18 @@ const WriteContract = () => {
   ];
 
   const handleConnect = async item => {
+    const [connector] = connectors;
+    const [Sepolia] = chains;
+
     if (item !== 1) {
       setIsOpenModal(false);
       return;
     }
-    handleConnectToWeb3()
-      .then(() => {
-        setIsOpenModal(false);
-        setIsConnected(true);
-      })
-      .catch(() => {
-        console.log("fail to connect...");
-      });
+
+    await walletClient.switchChain({ id: Sepolia.id });
+    connect({ connector });
+    setIsOpenModal(false);
+    setIsConnected(true);
   };
 
   return (
@@ -442,10 +385,10 @@ const WriteContract = () => {
           icon={<div className={isConnected ? "green" : undefined}></div>}
         >
           <a
-            href={`https://sepolia.etherscan.io/address/${accountAddress}`}
+            href={`https://sepolia.etherscan.io/address/${address}`}
             target="blank"
           >
-            Connected Web3 [{accountAddress}]
+            Connected Web3 [{address}]
           </a>
         </Button>
       ) : (
@@ -457,7 +400,7 @@ const WriteContract = () => {
           Connect to Web3
         </Button>
       )}
-      <Spin spinning={isLoading}>
+      <Spin spinning={approveContract.isLoading}>
         <div className="action">
           <Collapse
             destroyInactivePanel
