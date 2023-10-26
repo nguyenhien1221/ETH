@@ -56,10 +56,10 @@ const ReadContract = () => {
   useEffect(() => {
     data &&
       setContractDatas({
-        decimals: data[0].result,
-        name: data[1].result,
-        symbol: data[2].result,
-        totalSupply: data[3].result,
+        decimals: String(data[0].result),
+        name: String(data[1].result),
+        symbol: String(data[2].result),
+        totalSupply: String(data[3].result),
       });
   }, [data]);
 
