@@ -1,5 +1,5 @@
 import "../ReadContract/ReadContract.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Space, Collapse, Form, Input } from "antd";
 import {
   FileTextOutlined,
@@ -30,9 +30,15 @@ const ReadContract = () => {
 
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [contractData, setContractData] = useState({
+  const [contractInput, setContractInput] = useState({
     addressOwner: "",
     addressSpender: "",
+  });
+  const [contractDatas, setContractDatas] = useState({
+    name: "",
+    decimals: "",
+    symbol: "",
+    totalSupply: "",
   });
 
   const { data } = useContractReads({
@@ -47,28 +53,36 @@ const ReadContract = () => {
     ],
   });
 
-  const [decimals, name, symbol, totalSupply] = data;
+  useEffect(() => {
+    data &&
+      setContractDatas({
+        decimals: data[0].result,
+        name: data[1].result,
+        symbol: data[2].result,
+        totalSupply: data[3].result,
+      });
+  }, [data]);
 
   const balanceData = useContractRead({
     ...ITS_CONTRACT,
     functionName: "balanceOf",
     enabled: false,
-    args: [contractData.addressOwner],
+    args: [contractInput.addressOwner],
   });
 
   const allowanceData = useContractRead({
     ...ITS_CONTRACT,
     functionName: "allowance",
     enabled: false,
-    args: [contractData.addressOwner, contractData.addressSpender],
+    args: [contractInput.addressOwner, contractInput.addressSpender],
   });
 
   const handleGetbalance = async address => {
-    setContractData({ addressOwner: address.accountAddress });
+    setContractInput({ addressOwner: address.accountAddress });
   };
 
   const handleGetAllowance = async address => {
-    setContractData({
+    setContractInput({
       addressOwner: address.ownerAddress,
       addressSpender: address.spenderAddress,
     });
@@ -164,7 +178,7 @@ const ReadContract = () => {
       label: "3. decimals",
       children: (
         <Space size={2}>
-          <p>{decimals.result}</p>
+          <p>{contractDatas.decimals}</p>
           <span className="variable-type">uint8</span>
         </Space>
       ),
@@ -175,7 +189,7 @@ const ReadContract = () => {
       label: "4. name",
       children: (
         <Space size={2}>
-          <span>{name.result}</span>
+          <span>{contractDatas.name}</span>
           <span className="variable-type">string</span>
         </Space>
       ),
@@ -186,7 +200,7 @@ const ReadContract = () => {
       label: "5. symbol",
       children: (
         <Space size={2}>
-          <span>{symbol.result}</span>
+          <span>{contractDatas.symbol}</span>
           <span className="variable-type">string</span>
         </Space>
       ),
@@ -201,7 +215,7 @@ const ReadContract = () => {
             href="https://sepolia.etherscan.io/unitconverter?wei=11205479000000010000123667"
             target="blank"
           >
-            {String(totalSupply.result)}
+            {String(contractDatas.totalSupply)}
           </a>
           <span className="variable-type">unit256</span>
         </Space>

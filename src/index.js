@@ -22,7 +22,6 @@ const { publicClient, webSocketPublicClient, chains } = configureChains(
     infuraProvider({ apiKey: process.env.REACT_APP_INFURA_KEY }),
   ]
 );
-console.log(chains);
 
 const config = createConfig({
   chains,
