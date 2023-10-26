@@ -8,20 +8,15 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { TOKEN_CONTRACT } from "../constants";
+import { TOKEN_CONTRACT, SEPOLIA_ID } from "../constants";
 import abi from "../../abi/abi.json";
-import {
-  useAccount,
-  useConnect,
-  useContractWrite,
-  useSwitchNetwork,
-} from "wagmi";
+import { useAccount, useConnect, useContractWrite } from "wagmi";
 import { walletClient } from "../../utils/config";
 
 const WriteContract = () => {
   const { address } = useAccount();
-  const { chains } = useSwitchNetwork();
-  const { connect, connectors } = useConnect();
+
+  const { connectors, connectAsync } = useConnect();
   const writeContractConfig = {
     address: TOKEN_CONTRACT,
     abi: abi,
@@ -363,19 +358,41 @@ const WriteContract = () => {
     },
   ];
 
-  const handleConnect = async item => {
+  const handleConnect = item => {
     const [connector] = connectors;
-    const [Sepolia] = chains;
+    const CHAIN_ID = window.ethereum.networkVersion;
 
     if (item !== 1) {
       setIsOpenModal(false);
       return;
     }
 
-    await walletClient.switchChain({ id: Sepolia.id });
-    connect({ connector });
-    setIsOpenModal(false);
-    setIsConnected(true);
+    if (CHAIN_ID !== SEPOLIA_ID) {
+      walletClient.switchChain({ id: SEPOLIA_ID }).then(() => {
+        if (address) {
+          setIsOpenModal(false);
+          setIsConnected(true);
+          return;
+        }
+        connectAsync({ connector })
+          .then(() => {
+            setIsOpenModal(false);
+            setIsConnected(true);
+          })
+          .catch(err => console.log(err));
+      });
+
+      return;
+    }
+    if (address) {
+      setIsOpenModal(false);
+      setIsConnected(true);
+      return;
+    }
+    connectAsync({ connector }).then(() => {
+      setIsOpenModal(false);
+      setIsConnected(true);
+    });
   };
 
   return (

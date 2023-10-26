@@ -9,12 +9,11 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { TOKEN_CONTRACT } from "../constants";
+import { SEPOLIA_ID, TOKEN_CONTRACT } from "../constants";
 import abi from "../../abi/abi.json";
 import {
   useAccount,
   useConnect,
-  useSwitchNetwork,
   useContractReads,
   useContractRead,
 } from "wagmi";
@@ -22,8 +21,8 @@ import { walletClient } from "../../utils/config";
 
 const ReadContract = () => {
   const { address } = useAccount();
-  const { connect, connectors } = useConnect();
-  const { chains } = useSwitchNetwork();
+  const { connectors, connectAsync } = useConnect();
+
   const ITS_CONTRACT = {
     address: TOKEN_CONTRACT,
     abi: abi,
@@ -47,6 +46,7 @@ const ReadContract = () => {
       { ...ITS_CONTRACT, functionName: "totalSupply" },
     ],
   });
+
   const [decimals, name, symbol, totalSupply] = data;
 
   const balanceData = useContractRead({
@@ -210,19 +210,42 @@ const ReadContract = () => {
     },
   ];
 
-  const handleConnect = async item => {
+  const handleConnect = item => {
     const [connector] = connectors;
-    const [Sepolia] = chains;
+    const CHAIN_ID = window.ethereum.networkVersion;
 
     if (item !== 1) {
       setIsOpenModal(false);
       return;
     }
+    if (CHAIN_ID !== SEPOLIA_ID) {
+      walletClient.switchChain({ id: SEPOLIA_ID }).then(() => {
+        if (address) {
+          setIsOpenModal(false);
+          setIsConnected(true);
+          return;
+        }
+        connectAsync({ connector })
+          .then(() => {
+            setIsOpenModal(false);
+            setIsConnected(true);
+          })
+          .catch(err => alert(err.message));
+      });
+      return;
+    }
 
-    await walletClient.switchChain({ id: Sepolia.id });
-    connect({ connector });
-    setIsOpenModal(false);
-    setIsConnected(true);
+    if (address) {
+      setIsOpenModal(false);
+      setIsConnected(true);
+      return;
+    }
+    connectAsync({ connector })
+      .then(() => {
+        setIsOpenModal(false);
+        setIsConnected(true);
+      })
+      .catch(err => alert(err.message));
   };
 
   return (
