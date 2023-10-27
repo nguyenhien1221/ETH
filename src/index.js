@@ -16,7 +16,7 @@ import { infuraProvider } from "wagmi/providers/infura";
 import { MetaMaskConnector } from "wagmi/connectors/metaMask";
 
 const { publicClient, webSocketPublicClient, chains } = configureChains(
-  [sepolia, mainnet],
+  [sepolia],
   [
     publicProvider(),
     infuraProvider({ apiKey: process.env.REACT_APP_INFURA_KEY }),

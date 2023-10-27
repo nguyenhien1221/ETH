@@ -18,6 +18,7 @@ import {
   useContractRead,
 } from "wagmi";
 import { walletClient } from "../../utils/config";
+import { convertData } from "../../utils/helper";
 
 const ReadContract = () => {
   const { address } = useAccount();
@@ -79,15 +80,15 @@ const ReadContract = () => {
 
   const handleGetbalance = async address => {
     setContractInput({ addressOwner: address.accountAddress });
+    await balanceData.refetch();
   };
-
   const handleGetAllowance = async address => {
     setContractInput({
       addressOwner: address.ownerAddress,
       addressSpender: address.spenderAddress,
     });
+    await allowanceData.refetch();
   };
-
   const genExtra = () => (
     <Space>
       <CopyOutlined
@@ -138,7 +139,7 @@ const ReadContract = () => {
           </FormBox>
           <Space>
             <span className="variable-type">uint256</span>
-            <p>{allowanceData.data && String(allowanceData.data)}</p>
+            <p>{convertData(allowanceData.data)}</p>
           </Space>
         </div>
       ),
@@ -167,7 +168,7 @@ const ReadContract = () => {
           </FormBox>
           <Space>
             <span className="variable-type">uint256</span>
-            <p>{balanceData.data && String(balanceData.data)}</p>
+            <p>{convertData(balanceData.data)}</p>
           </Space>
         </div>
       ),
