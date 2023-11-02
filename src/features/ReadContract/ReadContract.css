@@ -28,3 +28,7 @@
   font-size: 12px;
   font-style: italic;
 }
+
+.ant-space-item:hover span {
+  color: rgb(52, 126, 209) !important;
+}

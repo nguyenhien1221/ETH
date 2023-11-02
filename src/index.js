@@ -14,6 +14,8 @@ import {
 import { publicProvider } from "wagmi/providers/public";
 import { infuraProvider } from "wagmi/providers/infura";
 import { MetaMaskConnector } from "wagmi/connectors/metaMask";
+import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
 
 const { publicClient, webSocketPublicClient, chains } = configureChains(
   [sepolia],
@@ -29,6 +31,18 @@ const config = createConfig({
   webSocketPublicClient,
   connectors: [
     new MetaMaskConnector({
+      chains: [sepolia, mainnet],
+    }),
+    new WalletConnectConnector({
+      options: {
+        projectId: process.env.REACT_APP_WALLETCONNECT_PROJECT_ID,
+      },
+      chains: [sepolia, mainnet],
+    }),
+    new CoinbaseWalletConnector({
+      options: {
+        jsonRpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+      },
       chains: [sepolia, mainnet],
     }),
   ],

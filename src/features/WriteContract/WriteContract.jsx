@@ -8,15 +8,28 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { TOKEN_CONTRACT, SEPOLIA_ID } from "../constants";
+import {
+  TOKEN_CONTRACT,
+  SEPOLIA_ID,
+  wallets,
+  SEPOLIA_ETHERSCAN_URL,
+} from "../constants";
 import abi from "../../abi/abi.json";
 import { useAccount, useConnect, useContractWrite } from "wagmi";
 import { walletClient } from "../../utils/config";
+import {
+  handleError,
+  handleCopyLink,
+  handleCopyMethod,
+} from "../../utils/helper";
+import { useParams } from "react-router-dom";
 
 const WriteContract = () => {
   const { address } = useAccount();
 
+  const { method } = useParams();
   const { connectors, connectAsync } = useConnect();
+
   const writeContractConfig = {
     address: TOKEN_CONTRACT,
     abi: abi,
@@ -55,6 +68,7 @@ const WriteContract = () => {
 
   const [isConnected, setIsConnected] = useState(false);
   const [isOpenModal, setIsOpenModal] = useState(false);
+  const [selectedConnector, setSelectedConnector] = useState(1);
   const [contractHash, setContractHash] = useState({
     approveHash: "",
     decreaseAllowanceHash: "",
@@ -64,39 +78,52 @@ const WriteContract = () => {
     transferFromHash: "",
   });
 
+  const isWritingContract =
+    approveContract.isLoading ||
+    decreaseAllowance.isLoading ||
+    increaseAllowance.isLoading ||
+    mint.isLoading ||
+    transfer.isLoading ||
+    transferFrom.isLoading;
+
   const handleApprove = async data => {
     const { ownerAddress, amount } = data;
     approveContract
       .writeAsync({ args: [ownerAddress, amount] })
-      .then(data => setContractHash({ approveHash: data.hash }));
+      .then(data => setContractHash({ approveHash: data.hash }))
+      .catch(() => handleError());
   };
 
   const handleDecreaseAllowance = async data => {
     const { spenderAddress, subtractedValue } = data;
     decreaseAllowance
       .writeAsync({ args: [spenderAddress, subtractedValue] })
-      .then(data => setContractHash({ decreaseAllowanceHash: data.hash }));
+      .then(data => setContractHash({ decreaseAllowanceHash: data.hash }))
+      .catch(() => handleError());
   };
 
   const handleIncreaseAllowance = async data => {
     const { spenderAddress, addedValue } = data;
     increaseAllowance
       .writeAsync({ args: [spenderAddress, addedValue] })
-      .then(data => setContractHash({ increaseAllowanceHash: data.hash }));
+      .then(data => setContractHash({ increaseAllowanceHash: data.hash }))
+      .catch(() => handleError());
   };
 
   const handleMint = async data => {
     const { accountAddress, amount } = data;
     mint
       .writeAsync({ args: [accountAddress, amount] })
-      .then(data => setContractHash({ mintHash: data.hash }));
+      .then(data => setContractHash({ mintHash: data.hash }))
+      .catch(() => handleError());
   };
 
   const handleTransfer = async data => {
     const { recipientAddress, amount } = data;
     transfer
       .writeAsync({ args: [recipientAddress, amount] })
-      .then(data => setContractHash({ transferHash: data.hash }));
+      .then(data => setContractHash({ transferHash: data.hash }))
+      .catch(() => handleError());
   };
 
   const handleTransferFrom = async data => {
@@ -106,19 +133,22 @@ const WriteContract = () => {
         args: [senderAddress, recipientAddress, amount],
       })
       .then(data => setContractHash({ transferFromHash: data.hash }))
-      .catch(error => alert(error));
+      .catch(() => handleError());
   };
 
-  const genExtra = () => (
+  const genExtra = item => (
     <Space>
       <CopyOutlined
         onClick={event => {
           event.stopPropagation();
+          handleCopyMethod(item);
         }}
       />
+
       <CloudUploadOutlined
         onClick={event => {
           event.stopPropagation();
+          handleCopyLink(item, "write");
         }}
       />
     </Space>
@@ -161,7 +191,7 @@ const WriteContract = () => {
           </FormBox>
         </div>
       ),
-      extra: genExtra(),
+      extra: genExtra("approve"),
     },
     {
       key: "2",
@@ -199,7 +229,7 @@ const WriteContract = () => {
           </FormBox>
         </div>
       ),
-      extra: genExtra(),
+      extra: genExtra("decreaseAllowance"),
     },
     {
       key: "3",
@@ -235,7 +265,7 @@ const WriteContract = () => {
           </Form.Item>
         </FormBox>
       ),
-      extra: genExtra(),
+      extra: genExtra("increaseAllowance"),
     },
     {
       key: "4",
@@ -271,7 +301,7 @@ const WriteContract = () => {
           </Form.Item>
         </FormBox>
       ),
-      extra: genExtra(),
+      extra: genExtra("mint"),
     },
     {
       key: "5",
@@ -307,7 +337,7 @@ const WriteContract = () => {
           </Form.Item>
         </FormBox>
       ),
-      extra: genExtra(),
+      extra: genExtra("transfer"),
     },
     {
       key: "6",
@@ -354,17 +384,26 @@ const WriteContract = () => {
           </Form.Item>
         </FormBox>
       ),
-      extra: genExtra(),
+      extra: genExtra("transferFrom"),
     },
   ];
 
-  const handleConnect = item => {
-    const [connector] = connectors;
-    const CHAIN_ID = window.ethereum.networkVersion;
+  const handleConnect = async item => {
+    const [metaMask, walletConnect, coinbaseWallet] = connectors;
+    let connector;
+    const CHAIN_ID = await walletClient.getChainId();
 
-    if (item !== 1) {
+    if (item === wallets.metaMask) {
+      connector = metaMask;
+      setSelectedConnector(1);
+    } else if (item === wallets.walletConnect) {
+      connector = walletConnect;
+      setSelectedConnector(2);
       setIsOpenModal(false);
-      return;
+    } else {
+      connector = coinbaseWallet;
+      setSelectedConnector(3);
+      setIsOpenModal(false);
     }
 
     if (CHAIN_ID !== SEPOLIA_ID) {
@@ -379,20 +418,28 @@ const WriteContract = () => {
             setIsOpenModal(false);
             setIsConnected(true);
           })
-          .catch(err => console.log(err));
+          .catch(err => {
+            alert(err.message);
+            setSelectedConnector(1);
+          });
       });
+      return;
+    }
 
-      return;
-    }
-    if (address) {
+    if (address && item === selectedConnector) {
       setIsOpenModal(false);
       setIsConnected(true);
       return;
     }
-    connectAsync({ connector }).then(() => {
-      setIsOpenModal(false);
-      setIsConnected(true);
-    });
+    connectAsync({ connector })
+      .then(() => {
+        setIsOpenModal(false);
+        setIsConnected(true);
+      })
+      .catch(err => {
+        alert(err.message);
+        setSelectedConnector(1);
+      });
   };
 
   return (
@@ -401,10 +448,7 @@ const WriteContract = () => {
         <Button
           icon={<div className={isConnected ? "green" : undefined}></div>}
         >
-          <a
-            href={`https://sepolia.etherscan.io/address/${address}`}
-            target="blank"
-          >
+          <a href={`${SEPOLIA_ETHERSCAN_URL}/${address}`} target="blank">
             Connected Web3 [{address}]
           </a>
         </Button>
@@ -417,7 +461,7 @@ const WriteContract = () => {
           Connect to Web3
         </Button>
       )}
-      <Spin spinning={approveContract.isLoading}>
+      <Spin spinning={isWritingContract}>
         <div className="action">
           <Collapse
             destroyInactivePanel
@@ -427,6 +471,7 @@ const WriteContract = () => {
               <ArrowRightOutlined rotate={isActive ? 90 : 0} />
             )}
             expandIconPosition="end"
+            defaultActiveKey={method}
           />
         </div>
       </Spin>

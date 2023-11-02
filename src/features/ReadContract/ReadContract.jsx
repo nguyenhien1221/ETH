@@ -9,7 +9,12 @@ import {
 } from "@ant-design/icons";
 import FormBox from "../../components/Form/FormBox";
 import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletModal";
-import { SEPOLIA_ID, TOKEN_CONTRACT } from "../constants";
+import {
+  SEPOLIA_ETHERSCAN_URL,
+  SEPOLIA_ID,
+  TOKEN_CONTRACT,
+  wallets,
+} from "../constants";
 import abi from "../../abi/abi.json";
 import {
   useAccount,
@@ -18,11 +23,16 @@ import {
   useContractRead,
 } from "wagmi";
 import { walletClient } from "../../utils/config";
-import { convertData } from "../../utils/helper";
-
+import {
+  convertData,
+  handleCopyLink,
+  handleCopyMethod,
+} from "../../utils/helper";
+import { useParams } from "react-router-dom";
 const ReadContract = () => {
   const { address } = useAccount();
   const { connectors, connectAsync } = useConnect();
+  const { method } = useParams();
 
   const ITS_CONTRACT = {
     address: TOKEN_CONTRACT,
@@ -31,6 +41,7 @@ const ReadContract = () => {
 
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [selectedConnector, setSelectedConnector] = useState(1);
   const [contractInput, setContractInput] = useState({
     addressOwner: "",
     addressSpender: "",
@@ -89,16 +100,19 @@ const ReadContract = () => {
     });
     await allowanceData.refetch();
   };
-  const genExtra = () => (
+
+  const genExtra = item => (
     <Space>
       <CopyOutlined
         onClick={event => {
           event.stopPropagation();
+          handleCopyMethod(item);
         }}
       />
       <CloudUploadOutlined
         onClick={event => {
           event.stopPropagation();
+          handleCopyLink(item, "read");
         }}
       />
     </Space>
@@ -143,7 +157,7 @@ const ReadContract = () => {
           </Space>
         </div>
       ),
-      extra: genExtra(),
+      extra: genExtra("allowance"),
     },
     {
       key: "2",
@@ -172,7 +186,7 @@ const ReadContract = () => {
           </Space>
         </div>
       ),
-      extra: genExtra(),
+      extra: genExtra("balanceOf"),
     },
     {
       key: "3",
@@ -183,7 +197,7 @@ const ReadContract = () => {
           <span className="variable-type">uint8</span>
         </Space>
       ),
-      extra: genExtra(),
+      extra: genExtra("decimals"),
     },
     {
       key: "4",
@@ -194,7 +208,7 @@ const ReadContract = () => {
           <span className="variable-type">string</span>
         </Space>
       ),
-      extra: genExtra(),
+      extra: genExtra("name"),
     },
     {
       key: "5",
@@ -205,7 +219,7 @@ const ReadContract = () => {
           <span className="variable-type">string</span>
         </Space>
       ),
-      extra: genExtra(),
+      extra: genExtra("symbol"),
     },
     {
       key: "6",
@@ -221,18 +235,28 @@ const ReadContract = () => {
           <span className="variable-type">unit256</span>
         </Space>
       ),
-      extra: genExtra(),
+      extra: genExtra("totalSupply"),
     },
   ];
 
-  const handleConnect = item => {
-    const [connector] = connectors;
-    const CHAIN_ID = window.ethereum.networkVersion;
+  const handleConnect = async item => {
+    const [metaMask, walletConnect, coinbaseWallet] = connectors;
+    let connector;
+    const CHAIN_ID = await walletClient.getChainId();
 
-    if (item !== 1) {
+    if (item === wallets.metaMask) {
+      connector = metaMask;
+      setSelectedConnector(1);
+    } else if (item === wallets.walletConnect) {
+      connector = walletConnect;
+      setSelectedConnector(2);
       setIsOpenModal(false);
-      return;
+    } else {
+      connector = coinbaseWallet;
+      setSelectedConnector(3);
+      setIsOpenModal(false);
     }
+
     if (CHAIN_ID !== SEPOLIA_ID) {
       walletClient.switchChain({ id: SEPOLIA_ID }).then(() => {
         if (address) {
@@ -245,12 +269,15 @@ const ReadContract = () => {
             setIsOpenModal(false);
             setIsConnected(true);
           })
-          .catch(err => alert(err.message));
+          .catch(err => {
+            alert(err.message);
+            setSelectedConnector(1);
+          });
       });
       return;
     }
 
-    if (address) {
+    if (address && item === selectedConnector) {
       setIsOpenModal(false);
       setIsConnected(true);
       return;
@@ -260,7 +287,10 @@ const ReadContract = () => {
         setIsOpenModal(false);
         setIsConnected(true);
       })
-      .catch(err => alert(err.message));
+      .catch(err => {
+        alert(err.message);
+        setSelectedConnector(1);
+      });
   };
 
   return (
@@ -269,10 +299,7 @@ const ReadContract = () => {
         <Button
           icon={<div className={isConnected ? "green" : undefined}></div>}
         >
-          <a
-            href={`https://sepolia.etherscan.io/address/${address}`}
-            target="blank"
-          >
+          <a href={`${SEPOLIA_ETHERSCAN_URL}/${address}`} target="blank">
             Connected Web3 [{address}]
           </a>
         </Button>
@@ -299,6 +326,7 @@ const ReadContract = () => {
             <ArrowRightOutlined rotate={isActive ? 90 : 0} />
           )}
           expandIconPosition="end"
+          defaultActiveKey={method}
         />
       </div>
       <ChooseWalletModal
