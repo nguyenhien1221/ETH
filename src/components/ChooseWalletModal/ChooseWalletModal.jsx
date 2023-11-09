@@ -2,27 +2,28 @@ import React from "react";
 import "../ChooseWalletModal/ChooseWalletModal.css";
 import { Modal, Card, Space, Button } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { walletsEnum } from "../../features/constants";
 
 const ChooseWalletModal = ({ isModalOpen, handleCancel, handleConnect }) => {
   const walletItems = [
     {
-      id: 1,
+      id: walletsEnum.metaMask,
       title: "MetaMask",
       logo: "https://sepolia.etherscan.io/images/svg/brands/metamask.svg",
     },
     {
-      id: 2,
+      id: walletsEnum.walletConnect,
       title: "WalletConnect",
       logo: "https://sepolia.etherscan.io/images/svg/brands/walletconnect.svg",
     },
     {
-      id: 3,
+      id: walletsEnum.coinbaseWallet,
       title: "Coinbase Wallet",
       logo: "https://sepolia.etherscan.io/images/svg/brands/coinbase.svg",
     },
   ];
 
-  const handleChooseWallet = (item) => {
+  const handleChooseWallet = item => {
     handleConnect(item);
   };
 
@@ -43,7 +44,7 @@ const ChooseWalletModal = ({ isModalOpen, handleCancel, handleConnect }) => {
             </p>
           </Space>
         </Card>
-        {walletItems.map((item) => (
+        {walletItems.map(item => (
           <Button
             className="wallet_item"
             onClick={() => handleChooseWallet(item.id)}

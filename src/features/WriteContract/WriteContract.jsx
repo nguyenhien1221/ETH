@@ -11,24 +11,21 @@ import ChooseWalletModal from "../../components/ChooseWalletModal/ChooseWalletMo
 import {
   TOKEN_CONTRACT,
   SEPOLIA_ID,
-  wallets,
+  walletsEnum,
   SEPOLIA_ETHERSCAN_URL,
 } from "../constants";
 import abi from "../../abi/abi.json";
 import { useAccount, useConnect, useContractWrite } from "wagmi";
 import { walletClient } from "../../utils/config";
-import {
-  handleError,
-  handleCopyLink,
-  handleCopyMethod,
-} from "../../utils/helper";
-import { useParams } from "react-router-dom";
+import { handleCopyLink, handleCopyMethod } from "../../utils/helper";
+import { useLocation } from "react-router-dom";
+import { errorNotification } from "../../components/Notification/Notification";
 
 const WriteContract = () => {
   const { address } = useAccount();
-
-  const { method } = useParams();
   const { connectors, connectAsync } = useConnect();
+  const { hash } = useLocation();
+  const method = hash.split("#")[2];
 
   const writeContractConfig = {
     address: TOKEN_CONTRACT,
@@ -91,7 +88,7 @@ const WriteContract = () => {
     approveContract
       .writeAsync({ args: [ownerAddress, amount] })
       .then(data => setContractHash({ approveHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const handleDecreaseAllowance = async data => {
@@ -99,7 +96,7 @@ const WriteContract = () => {
     decreaseAllowance
       .writeAsync({ args: [spenderAddress, subtractedValue] })
       .then(data => setContractHash({ decreaseAllowanceHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const handleIncreaseAllowance = async data => {
@@ -107,7 +104,7 @@ const WriteContract = () => {
     increaseAllowance
       .writeAsync({ args: [spenderAddress, addedValue] })
       .then(data => setContractHash({ increaseAllowanceHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const handleMint = async data => {
@@ -115,7 +112,7 @@ const WriteContract = () => {
     mint
       .writeAsync({ args: [accountAddress, amount] })
       .then(data => setContractHash({ mintHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const handleTransfer = async data => {
@@ -123,7 +120,7 @@ const WriteContract = () => {
     transfer
       .writeAsync({ args: [recipientAddress, amount] })
       .then(data => setContractHash({ transferHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const handleTransferFrom = async data => {
@@ -133,7 +130,7 @@ const WriteContract = () => {
         args: [senderAddress, recipientAddress, amount],
       })
       .then(data => setContractHash({ transferFromHash: data.hash }))
-      .catch(() => handleError());
+      .catch(err => errorNotification(err.message));
   };
 
   const genExtra = item => (
@@ -155,7 +152,7 @@ const WriteContract = () => {
   );
   const items = [
     {
-      key: "1",
+      key: "approve",
       label: "1. approve",
       children: (
         <div>
@@ -194,7 +191,7 @@ const WriteContract = () => {
       extra: genExtra("approve"),
     },
     {
-      key: "2",
+      key: "decreaseAllowance",
       label: "2. decreaseAllowance",
       children: (
         <div>
@@ -232,7 +229,7 @@ const WriteContract = () => {
       extra: genExtra("decreaseAllowance"),
     },
     {
-      key: "3",
+      key: "increaseAllowance",
       label: "3. increaseAllowance",
       children: (
         <FormBox
@@ -268,7 +265,7 @@ const WriteContract = () => {
       extra: genExtra("increaseAllowance"),
     },
     {
-      key: "4",
+      key: "mint",
       label: "4. mint",
       children: (
         <FormBox
@@ -304,7 +301,7 @@ const WriteContract = () => {
       extra: genExtra("mint"),
     },
     {
-      key: "5",
+      key: "transfer",
       label: "5. transfer",
       children: (
         <FormBox
@@ -340,7 +337,7 @@ const WriteContract = () => {
       extra: genExtra("transfer"),
     },
     {
-      key: "6",
+      key: "transferFrom",
       label: "6. transferFrom",
       children: (
         <FormBox
@@ -393,10 +390,10 @@ const WriteContract = () => {
     let connector;
     const CHAIN_ID = await walletClient.getChainId();
 
-    if (item === wallets.metaMask) {
+    if (item === walletsEnum.metaMask) {
       connector = metaMask;
       setSelectedConnector(1);
-    } else if (item === wallets.walletConnect) {
+    } else if (item === walletsEnum.walletConnect) {
       connector = walletConnect;
       setSelectedConnector(2);
       setIsOpenModal(false);
@@ -419,7 +416,7 @@ const WriteContract = () => {
             setIsConnected(true);
           })
           .catch(err => {
-            alert(err.message);
+            errorNotification(err.message);
             setSelectedConnector(1);
           });
       });
@@ -437,7 +434,7 @@ const WriteContract = () => {
         setIsConnected(true);
       })
       .catch(err => {
-        alert(err.message);
+        errorNotification(err.message);
         setSelectedConnector(1);
       });
   };

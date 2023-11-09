@@ -13,7 +13,7 @@ import {
   SEPOLIA_ETHERSCAN_URL,
   SEPOLIA_ID,
   TOKEN_CONTRACT,
-  wallets,
+  walletsEnum,
 } from "../constants";
 import abi from "../../abi/abi.json";
 import {
@@ -28,11 +28,13 @@ import {
   handleCopyLink,
   handleCopyMethod,
 } from "../../utils/helper";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { errorNotification } from "../../components/Notification/Notification";
 const ReadContract = () => {
   const { address } = useAccount();
   const { connectors, connectAsync } = useConnect();
-  const { method } = useParams();
+  const { hash } = useLocation();
+  const method = hash.split("#")[2];
 
   const ITS_CONTRACT = {
     address: TOKEN_CONTRACT,
@@ -119,7 +121,7 @@ const ReadContract = () => {
   );
   const items = [
     {
-      key: "1",
+      key: "allowance",
       label: "1. allowance",
       children: (
         <div>
@@ -160,7 +162,7 @@ const ReadContract = () => {
       extra: genExtra("allowance"),
     },
     {
-      key: "2",
+      key: "balanceOf",
       label: "2. balanceOf",
       children: (
         <div>
@@ -189,7 +191,7 @@ const ReadContract = () => {
       extra: genExtra("balanceOf"),
     },
     {
-      key: "3",
+      key: "decimals",
       label: "3. decimals",
       children: (
         <Space size={2}>
@@ -200,7 +202,7 @@ const ReadContract = () => {
       extra: genExtra("decimals"),
     },
     {
-      key: "4",
+      key: "name",
       label: "4. name",
       children: (
         <Space size={2}>
@@ -211,7 +213,7 @@ const ReadContract = () => {
       extra: genExtra("name"),
     },
     {
-      key: "5",
+      key: "symbol",
       label: "5. symbol",
       children: (
         <Space size={2}>
@@ -222,12 +224,14 @@ const ReadContract = () => {
       extra: genExtra("symbol"),
     },
     {
-      key: "6",
+      key: "totalSupply",
       label: "6. totalSupply",
       children: (
         <Space size={2}>
           <a
-            href="https://sepolia.etherscan.io/unitconverter?wei=11205479000000010000123667"
+            href={`https://sepolia.etherscan.io/unitconverter?wei=${String(
+              contractDatas.totalSupply
+            )}`}
             target="blank"
           >
             {String(contractDatas.totalSupply)}
@@ -244,10 +248,10 @@ const ReadContract = () => {
     let connector;
     const CHAIN_ID = await walletClient.getChainId();
 
-    if (item === wallets.metaMask) {
+    if (item === walletsEnum.metaMask) {
       connector = metaMask;
       setSelectedConnector(1);
-    } else if (item === wallets.walletConnect) {
+    } else if (item === walletsEnum.walletConnect) {
       connector = walletConnect;
       setSelectedConnector(2);
       setIsOpenModal(false);
@@ -270,7 +274,7 @@ const ReadContract = () => {
             setIsConnected(true);
           })
           .catch(err => {
-            alert(err.message);
+            errorNotification(err.message);
             setSelectedConnector(1);
           });
       });
@@ -288,7 +292,7 @@ const ReadContract = () => {
         setIsConnected(true);
       })
       .catch(err => {
-        alert(err.message);
+        errorNotification(err.message);
         setSelectedConnector(1);
       });
   };

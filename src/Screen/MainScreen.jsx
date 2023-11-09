@@ -12,13 +12,16 @@ import Link from "antd/es/typography/Link";
 import ContractItem from "../components/ContractItem/ContractItem";
 import { SEPOLIA_ETHERSCAN_URL, TOKEN_CONTRACT } from "../features/constants";
 import "./MainScreen.css";
-import { useParams } from "react-router-dom";
 import { useContractRead } from "wagmi";
 import abi from "../abi/abi.json";
+import { handleCopyMethod } from "../utils/helper";
+import { useLocation } from "react-router-dom";
 
 const MainScreen = () => {
+  const { hash } = useLocation();
+  const action = hash.split("#")[1];
+
   const navbarItems = ["Home", "Blockchain", "Token", "NFTs", "Misc"];
-  const { action } = useParams();
 
   const tabsItem = [
     { id: 1, label: "Transfer", item: <div>Stransfer</div> },
@@ -158,7 +161,9 @@ const MainScreen = () => {
                   >
                     {TOKEN_CONTRACT}
                   </a>
-                  <CopyOutlined />
+                  <CopyOutlined
+                    onClick={() => handleCopyMethod(TOKEN_CONTRACT)}
+                  />
                 </Space>
               </div>
             </Col>
