@@ -7,8 +7,3 @@ export const walletsEnum = {
   walletConnect: 2,
   coinbaseWallet: 3,
 };
-
-export const actionValues = {
-  read: "2",
-  write: "3",
-};

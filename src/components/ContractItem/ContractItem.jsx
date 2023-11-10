@@ -3,12 +3,16 @@ import { Tabs } from "antd";
 import "../ContractItem/ContractItem.css";
 import ReadContract from "../../features/ReadContract/ReadContract";
 import WriteContract from "../../features/WriteContract/WriteContract";
-import { actionValues } from "../../features/constants";
 import { useLocation } from "react-router-dom";
 
 const ContractItem = () => {
   const { hash } = useLocation();
   const action = hash.split("#")[1];
+
+  const actionValues = {
+    read: "2",
+    write: "3",
+  };
 
   const tabsItem = [
     { id: 1, label: "Code", item: <div>Code</div> },
